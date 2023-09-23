@@ -1,0 +1,4 @@
+---
+template-prefix: ubuntu-k8s
+cpu: 4
+ram: 16384
