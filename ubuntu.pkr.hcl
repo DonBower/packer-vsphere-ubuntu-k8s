@@ -33,14 +33,17 @@ locals {
   build_by          = "Built by: HashiCorp Packer ${packer.version}"
   build_date        = formatdate("YYYY-MM-DD hh:mm ZZZ", timestamp())
   branchName        = data.git-repository.cwd.head
-  build_version     = data.git-repository.cwd.head == "main" ? "latest" : substr(data.git-commit.cwd-head.hash, 0, 8)
+  isMain            = data.git-repository.cwd.head == "main" ? true : false
+  version           = trimspace(file("${path.root}/version.txt"))
+  build_version     = local.isMain ? local.version : "${local.version}-rc"
   build_description = "Version: ${local.build_version}\nBuilt on: ${local.build_date}\n${local.build_by}"
-  iso_paths         = ["[${var.common_iso_datastore}] ${var.iso_path}/${var.iso_file}"]
-  iso_checksum      = "${var.iso_checksum_type}:${var.iso_checksum_value}"
-  manifest_date     = formatdate("YYYY-MM-DD hh:mm:ss", timestamp())
-  manifest_path     = "${path.cwd}/manifests/"
-  manifest_output   = "${local.manifest_path}${local.manifest_date}.json"
-  ovf_export_path   = "${path.cwd}/artifacts/${local.vm_name}"
+  // iso_paths         = ["[${var.common_iso_datastore}] ${var.iso_path}/${var.iso_file}"]
+  iso_paths       = ["[ag6hq-cl] ${var.iso_file}"]
+  iso_checksum    = "${var.iso_checksum_type}:${var.iso_checksum_value}"
+  manifest_date   = formatdate("YYYY-MM-DD hh:mm:ss", timestamp())
+  manifest_path   = "${path.cwd}/manifests/"
+  manifest_output = "${local.manifest_path}${local.manifest_date}.json"
+  ovf_export_path = "${path.cwd}/artifacts/${local.vm_name}"
   data_source_content = {
     "/meta-data" = file("${abspath(path.root)}/data/meta-data")
     "/user-data" = templatefile("${abspath(path.root)}/data/user-data.pkrtpl.hcl", {
@@ -53,13 +56,14 @@ locals {
     })
   }
   data_source_command = var.common_data_source == "http" ? "ds=\"nocloud-net;seedfrom=http://{{.HTTPIP}}:{{.HTTPPort}}/\"" : "ds=\"nocloud\""
-  vm_name             = local.template_name
+  vm_name             = local.templateName
   configYAML          = yamldecode(file("${path.root}/config.yaml"))
-  templateSuffix      = local.branchName == "main" ? "latest" : local.branchName
-  templatePrefix      = local.configYAML.template-prefix
-  template_name       = "${local.templatePrefix}-${local.templateSuffix}"
-  bucket_name         = replace("${var.vm_guest_os_family}-${var.vm_guest_os_name}-${var.vm_guest_os_version}", ".", "")
-  bucket_description  = "${var.vm_guest_os_family} ${var.vm_guest_os_name} ${var.vm_guest_os_version}"
+  isoPaths            = ["${local.configYAML.iso.path}/${local.configYAML.iso.file}"]
+  templateSuffix      = local.isMain ? local.version : "${local.version}-rc"
+  templatePrefix      = local.configYAML.templatePrefix
+  templateName        = "${local.templatePrefix}-${local.templateSuffix}"
+  bucket_name         = local.templateName
+  bucketDescription   = "${var.vm_guest_os_family} ${var.vm_guest_os_name} ${var.vm_guest_os_version}"
 }
 
 //  BLOCK: source
@@ -104,7 +108,8 @@ source "vsphere-iso" "linux-ubuntu" {
   notes                = local.build_description
 
   // Removable Media Settings
-  iso_paths    = local.iso_paths
+  // iso_paths    = ["ag6hq-cl/ubuntu-22.04.3-live-server-amd64.iso/ubuntu-22.04.3-live-server-amd64.iso"]
+  iso_paths    = local.isoPaths
   iso_checksum = local.iso_checksum
   http_content = var.common_data_source == "http" ? local.data_source_content : null
   cd_content   = var.common_data_source == "disk" ? local.data_source_content : null
@@ -157,7 +162,7 @@ source "vsphere-iso" "linux-ubuntu" {
   dynamic "export" {
     for_each = var.common_ovf_export_enabled == true ? [1] : []
     content {
-      name  = local.template_name
+      name  = local.templateName
       force = var.common_ovf_export_overwrite
       options = [
         "extraconfig"
@@ -189,59 +194,56 @@ build {
     ]
   }
 
-    post-processor "manifest" {
-      output     = local.manifest_output
-      strip_path = true
-      strip_time = true
-      custom_data = {
-        ansible_username         = var.ansible_username
-        build_username           = var.build_username
-        build_date               = local.build_date
-        build_version            = local.build_version
-        common_data_source       = var.common_data_source
-        common_vm_version        = var.common_vm_version
-        vm_cpu_cores             = var.vm_cpu_cores
-        vm_cpu_count             = var.vm_cpu_count
-        vm_disk_size             = var.vm_disk_size
-        vm_disk_thin_provisioned = var.vm_disk_thin_provisioned
-        vm_firmware              = var.vm_firmware
-        vm_guest_os_type         = var.vm_guest_os_type
-        vm_mem_size              = var.vm_mem_size
-        vm_network_card          = var.vm_network_card
-        vsphere_cluster          = var.vsphere_cluster
-        vsphere_datacenter       = var.vsphere_datacenter
-        vsphere_datastore        = var.vsphere_datastore
-        vsphere_endpoint         = var.vsphere_endpoint
-        vsphere_folder           = var.vsphere_folder
-      }
+  post-processor "manifest" {
+    output     = local.manifest_output
+    strip_path = true
+    strip_time = true
+    custom_data = {
+      ansible_username         = var.ansible_username
+      build_username           = var.build_username
+      build_date               = local.build_date
+      build_version            = local.build_version
+      common_data_source       = var.common_data_source
+      common_vm_version        = var.common_vm_version
+      vm_cpu_cores             = var.vm_cpu_cores
+      vm_cpu_count             = var.vm_cpu_count
+      vm_disk_size             = var.vm_disk_size
+      vm_disk_thin_provisioned = var.vm_disk_thin_provisioned
+      vm_firmware              = var.vm_firmware
+      vm_guest_os_type         = var.vm_guest_os_type
+      vm_mem_size              = var.vm_mem_size
+      vm_network_card          = var.vm_network_card
+      vsphere_cluster          = var.vsphere_cluster
+      vsphere_datacenter       = var.vsphere_datacenter
+      vsphere_datastore        = var.vsphere_datastore
+      vsphere_endpoint         = var.vsphere_endpoint
+      vsphere_folder           = var.vsphere_folder
     }
+  }
 
-    // post-processor "vsphere-template" {
-    //   host                = var.vsphere_endpoint
-    //   username            = var.vsphere_username
-    //   password            = var.vsphere_password
-    //   insecure_connection = var.vsphere_insecure_connection
-    //   datacenter          = var.vsphere_datacenter
-    //   vm_name             = local.vm_name
-    //   folder              = var.vsphere_folder
-    //   library             = var.common_content_library_name
-    // }
+  // post-processor "vsphere-template" {
+  //   host                = var.vsphere_endpoint
+  //   username            = var.vsphere_username
+  //   password            = var.vsphere_password
+  //   insecure_connection = var.vsphere_insecure_connection
+  //   datacenter          = var.vsphere_datacenter
+  //   vm_name             = local.vm_name
+  //   folder              = var.vsphere_folder
+  //   library             = var.common_content_library_name
+  // }
 
 
-  dynamic "hcp_packer_registry" {
-    for_each = var.common_hcp_packer_registry_enabled ? [1] : []
-    content {
-      bucket_name = local.bucket_name
-      description = local.bucket_description
-      bucket_labels = {
-        "os_family" : var.vm_guest_os_family,
-        "os_name" : var.vm_guest_os_name,
-        "os_version" : var.vm_guest_os_version,
-      }
-      build_labels = {
-        "build_version" : local.build_version,
-        "packer_version" : packer.version,
-      }
+  hcp_packer_registry {
+    bucket_name = local.templatePrefix
+    description = local.bucketDescription
+    bucket_labels = {
+      "os_family" : var.vm_guest_os_family,
+      "os_name" : var.vm_guest_os_name,
+      "os_version" : var.vm_guest_os_version,
+    }
+    build_labels = {
+      "build_version" : local.version,
+      "packer_version" : packer.version,
     }
   }
 }
@@ -251,7 +253,7 @@ build {
 // }
 
 // output templateName {
-//   value = local.template_name
+//   value = local.templateName
 // }
 
 // output contentLibrary {

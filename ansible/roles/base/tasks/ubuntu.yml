@@ -8,11 +8,19 @@
 - name: "Installing additional packages."
   apt:
     name:
+      - acl
       - bash-completion
-      - curl
-      - wget
-      - git
-      - net-tools
-      - unzip
       - ca-certificates
+      - curl
+      - git
+      - gnupg
+      - lvm2
+      - net-tools
+      - netcat
+      - nfs-common
+      - python3.11
+      - python3-pip
+      - python-is-python3
+      - unzip
+      - wget
     state: latest     # noqa package-latest
