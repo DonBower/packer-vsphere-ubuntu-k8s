@@ -32,14 +32,17 @@ data "git-commit" "cwd-head" {}
 locals {
   build_by          = "Built by: HashiCorp Packer ${packer.version}"
   build_date        = formatdate("YYYY-MM-DD hh:mm ZZZ", timestamp())
+  configYAML          = yamldecode(file("${path.root}/config.yaml"))
+  isoPaths            = ["${local.configYAML.iso.path}/${local.configYAML.iso.file}"]
+  isoChecksum         = local.configYAML.iso.checksum
   branchName        = data.git-repository.cwd.head
   isMain            = data.git-repository.cwd.head == "main" ? true : false
   version           = trimspace(file("${path.root}/version.txt"))
   build_version     = local.isMain ? local.version : "${local.version}-rc"
   build_description = "Version: ${local.build_version}\nBuilt on: ${local.build_date}\n${local.build_by}"
   // iso_paths         = ["[${var.common_iso_datastore}] ${var.iso_path}/${var.iso_file}"]
-  iso_paths       = ["[ag6hq-cl] ${var.iso_file}"]
-  iso_checksum    = "${var.iso_checksum_type}:${var.iso_checksum_value}"
+  // iso_paths       = ["[ag6hq-cl] ${var.iso_file}"]
+  // iso_checksum    = "${var.iso_checksum_type}:${var.iso_checksum_value}"
   manifest_date   = formatdate("YYYY-MM-DD hh:mm:ss", timestamp())
   manifest_path   = "${path.cwd}/manifests/"
   manifest_output = "${local.manifest_path}${local.manifest_date}.json"
@@ -57,8 +60,6 @@ locals {
   }
   data_source_command = var.common_data_source == "http" ? "ds=\"nocloud-net;seedfrom=http://{{.HTTPIP}}:{{.HTTPPort}}/\"" : "ds=\"nocloud\""
   vm_name             = local.templateName
-  configYAML          = yamldecode(file("${path.root}/config.yaml"))
-  isoPaths            = ["${local.configYAML.iso.path}/${local.configYAML.iso.file}"]
   templateSuffix      = local.isMain ? local.version : "${local.version}-rc"
   templatePrefix      = local.configYAML.templatePrefix
   templateName        = "${local.templatePrefix}-${local.templateSuffix}"
@@ -110,7 +111,7 @@ source "vsphere-iso" "linux-ubuntu" {
   // Removable Media Settings
   // iso_paths    = ["ag6hq-cl/ubuntu-22.04.3-live-server-amd64.iso/ubuntu-22.04.3-live-server-amd64.iso"]
   iso_paths    = local.isoPaths
-  iso_checksum = local.iso_checksum
+  iso_checksum = local.isoChecksum
   http_content = var.common_data_source == "http" ? local.data_source_content : null
   cd_content   = var.common_data_source == "disk" ? local.data_source_content : null
   cd_label     = var.common_data_source == "disk" ? "cidata" : null

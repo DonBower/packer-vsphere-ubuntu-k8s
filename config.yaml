@@ -1,7 +1,8 @@
 ---
 templatePrefix: ubuntu-k8s
-cpu: 4
-ram: 16384
+vsphere:
+  cpu: 4
+  ram: 16384
 iso:
   path: "[isostore] linux/ubuntu"
   file: ubuntu-22.04.3-live-server-amd64.iso
