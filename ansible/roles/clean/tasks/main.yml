@@ -1,16 +1,46 @@
 ---
-- name: "Clean the {{ ansible_facts['distribution'] }} guest operating system."
-  include_tasks: "{{ ansible_facts['distribution'] | lower }}.yml"
-  when: "ansible_facts['distribution'] == 'Debian'"
-- name: "Clean the {{ ansible_facts['distribution'] }} guest operating system."
-  include_tasks: "{{ ansible_facts['distribution'] | lower }}.yml"
-  when: "ansible_facts['distribution'] == 'Ubuntu'"
-- name: "Clean the {{ ansible_facts['distribution'] }} guest operating system."
-  include_tasks: redhat.yml
-  when: "ansible_facts['distribution'] in ['RedHat', 'CentOS', 'Rocky', 'AlmaLinux']"
-- name: "Clean the {{ ansible_facts['os_family'] }} guest operating system."
-  include_tasks: "{{ ansible_facts['lsb']['codename'] | lower }}.yml"
-  when: "ansible_facts['os_family'] == 'VMware Photon OS'"
-- name: "Clean the {{ ansible_facts['distribution'] }} guest operating system."
-  include_tasks: sles.yml
-  when: "ansible_facts['distribution'] == 'SLES'"
+- name: Cleaning all audit logs
+  ansible.builtin.shell: |
+    if [ -f /var/log/audit/audit.log ]; then
+    cat /dev/null > /var/log/audit/audit.log
+    fi
+    if [ -f /var/log/wtmp ]; then
+    cat /dev/null > /var/log/wtmp
+    fi
+    if [ -f /var/log/lastlog ]; then
+    cat /dev/null > /var/log/lastlog
+    fi
+  changed_when: true
+
+- name: Cleaning persistent udev rules
+  ansible.builtin.shell: |
+    if [ -f /etc/udev/rules.d/70-persistent-net.rules ]; then
+    rm /etc/udev/rules.d/70-persistent-net.rules
+    fi
+  changed_when: true
+
+- name: Cleaning the /tmp directories
+  ansible.builtin.shell: |
+    rm -rf /tmp/*
+    rm -rf /var/tmp/*
+  changed_when: true
+
+- name: Cleaning the SSH host keys
+  ansible.builtin.shell: |
+    rm -f /etc/ssh/ssh_host_*
+  changed_when: true
+
+- name: Cleaning the machine-id
+  ansible.builtin.shell: |
+    truncate -s 0 /etc/machine-id
+    rm /var/lib/dbus/machine-id
+    ln -s /etc/machine-id /var/lib/dbus/machine-id
+  changed_when: true
+
+- name: Cleaning the shell history
+  ansible.builtin.shell: |
+    unset HISTFILE
+    history -cw
+    echo > ~/.bash_history
+    rm -fr /root/.bash_history
+  changed_when: true
