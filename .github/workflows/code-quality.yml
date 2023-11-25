@@ -16,7 +16,7 @@
           uses: github/super-linter@v5.0.0
           env:
             GITHUB_TOKEN: ${{ github.token }}
-            FILTER_REGEX_EXCLUDE: "build.tmpl"
+            FILTER_REGEX_EXCLUDE: "*.pkrtpl.hcl"
             IGNORE_GITIGNORED_FILES: true
             VALIDATE_ALL_CODEBASE: true
             DEFAULT_BRANCH: "main"

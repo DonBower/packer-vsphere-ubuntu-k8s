@@ -54,7 +54,7 @@ Operating systems and versions tested with the project:
   >
   > I use an [Ansible](https://github.com/DonBower/ansible) project to install products on my MacOS.
   > most likely, you don't have access to this project, so here is the task file I use:
-```
+```yaml
 ---
 # We need to download packer archive from here on our remote packer instance. 
 # This will give a zip archive file. 
@@ -881,7 +881,7 @@ Happy building!!!
 [hcp-packer-create]: https://developer.hashicorp.com/packer/tutorials/hcp-get-started/hcp-push-image-metadata?in=packer%2Fhcp-get-started#create-hcp-packer-registry
 [hcp-packer-docs]: https://developer.hashicorp.com/hcp/docs/packer
 [hcp-packer-intro]: https://www.youtube.com/watch?v=r0I4TTO957w
-[hcp-security]: https://www.hashicorp.com/security
+
 [iso]: https://en.wikipedia.org/wiki/ISO_image
 [jq]: https://stedolan.github.io/jq/
 [microsoft-kms]: https://docs.microsoft.com/en-us/windows-server/get-started/kmsclientkeys
@@ -892,7 +892,7 @@ Happy building!!!
 [packer-install]: https://developer.hashicorp.com/packer/tutorials/docker-get-started/get-started-install-cli
 [packer-plugin-git]: https://github.com/ethanmdavidson/packer-plugin-git
 [packer-plugin-vsphere]: https://developer.hashicorp.com/packer/plugins/builders/vsphere/vsphere-iso
-[packer-plugin-windows-update]: https://github.com/rgl/packer-plugin-windows-update
+
 [packer-variables]: https://developer.hashicorp.com/packer/docs/templates/hcl_templates/variables
 [photon-kickstart]: https://vmware.github.io/photon/docs/user-guide/working-with-kickstart/
 [redhat-kickstart]: https://access.redhat.com/labs/kickstartconfig/
@@ -902,4 +902,4 @@ Happy building!!!
 [vmware-vmxnet3]: https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.vm_admin.doc/GUID-AF9E24A8-2CFA-447B-AC83-35D563119667.html
 [vsphere-content-library]: https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.vm_admin.doc/GUID-254B2CE8-20A8-43F0-90E8-3F6776C2C896.html
 [vsphere-upload]: https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.storage.doc/GUID-58D77EA5-50D9-4A8E-A15A-D7B3ABA11B87.html
-[vsphere-tpm]: https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.vm_admin.doc/GUID-4DBF65A4-4BA0-4667-9725-AE9F047DE00A.html
+
