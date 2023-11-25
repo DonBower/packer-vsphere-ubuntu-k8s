@@ -9,11 +9,11 @@
       runs-on: ubuntu-latest
       steps:
         - name: Checkout Repository
-          uses: actions/checkout@v4.1.1
+          uses: actions/checkout@v4
           with:
             fetch-depth: 0
         - name: Lint Code
-          uses: github/super-linter@v5.7.0
+          uses: github/super-linter@v5
           env:
             GITHUB_TOKEN: ${{ github.token }}
             FILTER_REGEX_EXCLUDE: "*.pkrtpl.hcl"
