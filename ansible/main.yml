@@ -1,7 +1,7 @@
 ---
 - name: Prepare the image
   become: true
-  become_method: ansible.builtin.sudo
+  become_method: sudo
   debugger: never
   gather_facts: true
   hosts: all
@@ -10,3 +10,9 @@
     - users
     - configure
     - clean
+
+  handlers:
+    - name: Update GRUB
+      ansible.builtin.command: update-grub
+      listen: "update-grub"
+      changed_when: true

@@ -33,6 +33,7 @@ locals {
   build_by          = "Built by: HashiCorp Packer ${packer.version}"
   build_date        = formatdate("YYYY-MM-DD hh:mm ZZZ", timestamp())
   configYAML          = yamldecode(file("${path.root}/config.yaml"))
+  vsphere = local.configYAML["vsphere"]
   isoPaths            = ["${local.configYAML.iso.path}/${local.configYAML.iso.file}"]
   isoChecksum         = local.configYAML.iso.checksum
   branchName        = data.git-repository.cwd.head
@@ -95,9 +96,12 @@ source "vsphere-iso" "linux-ubuntu" {
   RAM_hot_plug         = var.vm_mem_hot_add
   cdrom_type           = var.vm_cdrom_type
   disk_controller_type = var.vm_disk_controller_type
-  storage {
-    disk_size             = var.vm_disk_size
-    disk_thin_provisioned = var.vm_disk_thin_provisioned
+  dynamic "storage" {
+    for_each          = local.vmStorage
+    content {
+      disk_size             = storage.value.size
+      disk_thin_provisioned = storage.value.thin
+    }
   }
   network_adapters {
     network      = var.vsphere_network
