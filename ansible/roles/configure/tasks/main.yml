@@ -1,16 +1,63 @@
 ---
-- name: "Configure the {{ ansible_facts['distribution'] }} guest operating system."
-  include_tasks: "{{ ansible_facts['distribution'] | lower }}.yml"
-  when: "ansible_facts['distribution'] == 'Debian'"
-- name: "Configure the {{ ansible_facts['distribution'] }} guest operating system."
-  include_tasks: "{{ ansible_facts['distribution'] | lower }}.yml"
-  when: "ansible_facts['distribution'] == 'Ubuntu'"
-- name: "Configure the {{ ansible_facts['distribution'] }} guest operating system."
-  include_tasks: redhat.yml
-  when: "ansible_facts['distribution'] in ['RedHat', 'CentOS', 'Rocky', 'AlmaLinux']"
-- name: "Configure the {{ ansible_facts['os_family'] }} guest operating system."
-  include_tasks: "{{ ansible_facts['lsb']['codename'] | lower }}.yml"
-  when: "ansible_facts['os_family'] == 'VMware Photon OS'"
-- name: "Configure the {{ ansible_facts['distribution'] }} guest operating system."
-  include_tasks: sles.yml
-  when: "ansible_facts['distribution'] == 'SLES'"
+- name: "Configure SSH for Public Key Authentication."
+  ansible.builtin.shell: |
+    sudo sed -i 's/.*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+  changed_when: true
+
+- name: "Setting hostname to localhost."
+  ansible.builtin.shell: |
+    cat /dev/null > /etc/hostname
+    hostnamectl set-hostname localhost
+  changed_when: true
+
+- name: "Restarting the SSH daemon."
+  ansible.builtin.shell: |
+    sudo systemctl restart sshd
+  changed_when: true
+
+- name: "Disabling and clean tmp."
+  ansible.builtin.shell: |
+    sudo sed -i 's/D/#&/' /usr/lib/tmpfiles.d/tmp.conf
+  changed_when: true
+
+- name: "Preparing cloud-init."
+  ansible.builtin.shell: |
+    rm -rf /etc/cloud/cloud.cfg.d/subiquity-disable-cloudinit-networking.cfg
+    rm -rf /etc/cloud/cloud.cfg.d/99-installer.cfg
+    rm -rf /etc/netplan/00-installer-config.yaml
+    echo "disable_vmware_customization: false" >> /etc/cloud/cloud.cfg
+    echo "datasource_list: [ VMware, OVF, None ]" > /etc/cloud/cloud.cfg.d/90_dpkg.cfg
+  when: ansible_distribution_version == "20.04" or ansible_distribution_version == "22.04"
+  changed_when: true
+
+- name: Modifying GRUB.
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    state: present
+    regexp: 'GRUB_CMDLINE_LINUX_DEFAULT='
+    line: 'GURB_CMDLINE_LINUX_DEFAULT=""'
+  # ansible.builtin.shell: |
+  #   sed -i -e "s/GRUB_CMDLINE_LINUX_DEFAULT=\"\(.*\)\"/GURB_CMDLINE_LINUX_DEFAULT=\"\"/" /etc/default/grub
+  #   update-grub
+  when: ansible_distribution_version == "20.04" or ansible_distribution_version == "22.04"
+
+- name: Setting SSH keys to regenerate on reboot, if neccessary.
+  ansible.builtin.shell: |
+    sudo tee /etc/rc.local << EOF
+    #!/bin/bash
+    test -f /etc/ssh/ssh_host_dsa_key || dpkg-reconfigure openssh-server
+    exit 0
+    EOF
+    sudo chmod +x /etc/rc.local
+  changed_when: true
+
+- name: Disable IPv6 via GRUB
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub.d/99-disable-ipv6.cfg
+    line: 'GRUB_CMDLINE_LINUX_DEFAULT="${GRUB_CMDLINE_LINUX_DEFAULT} ipv6.disable=1"'
+    state: present
+    owner: root
+    group: root
+    mode: "0644"
+    create: true
+  notify: update-grub
